@@ -15,5 +15,5 @@ Now this project is just a toy python implement to the paper above. However, it 
 7. 日志;现在居然一点日志都没有
 8. 表格的组成;现在很多都弄成表格，速度快了，但内存占用太大，计算不了太大的值;因此可能考虑放开一些表格，实时但重复计算，做时间-空间交易;
 
-大家可以用http://www.asahi-net.or.jp/~KC2H-MSM/mathland/math04/matb0100.htm找一些测试案例，但请注意，论文的方法只对$k\equiv3(mod\;9)$成立;
+大家可以用http://www.asahi-net.or.jp/~KC2H-MSM/mathland/math04/matb0100.htm 找一些测试案例，但请注意，论文的方法只对$k\equiv3(mod\;9)$成立;
 
