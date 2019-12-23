@@ -2,7 +2,7 @@
 
 A non-official python implement of paper ["CRACKING THE PROBLEM WITH 33"](https://people.maths.bris.ac.uk/~maarb/papers/cubesv1.pdf) which present a computational solution to sums of three cubes problems for 33.
 
-Now this project is just a toy python implement to the paper above. However, it accomplish the gist. Improvement may or may not plan to be done.
+Now this project is just a toy python implement to the paper above. However, it accomplishes the gist. Improvement may or may not plan to be done.
 
 现在的实现还远不够完美，基本还处于玩具阶段，但基本实现了大体解题思路，还有一些没有实现的部分如下：
 
