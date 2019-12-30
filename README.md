@@ -17,9 +17,6 @@ Now this project is just a toy python implement to the paper above. However, it 
 大家可以用http://www.asahi-net.or.jp/~KC2H-MSM/mathland/math04/matb0100.htm 找一些测试案例，但请注意，论文的方法只对$k\equiv3(mod\;9)$成立;
 
 参考文献：
-
-求解z^3=k(mod p)https://eprint.iacr.org/2009/457.pdf 以及其引用[3]
-
-Rolandb在https://stackoverflow.com/questions/6752374/cube-root-modulo-p-how-do-i-do-this 的分享
-
-一些代码引用修改自https://rosettacode.org/
+  1. 求解z^3=k(mod p)https://eprint.iacr.org/2009/457.pdf 以及其引用[3]
+  2. Rolandb在https://stackoverflow.com/questions/6752374/cube-root-modulo-p-how-do-i-do-this 的分享
+  3. 一些代码引用修改自https://rosettacode.org/
