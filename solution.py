@@ -13,11 +13,15 @@ class Constants:
     def _calc(self):
         self.alpha = 2**(1/3) - 1
         self.dB = int(self.alpha * self.B) # bound of d
+        # sqrt(dB)
+        self.sqrt_dB = int(self.dB**0.5)
         # eps = (k mod 9)/3
+        assert (self.k%9)%3==0
         eps = (self.k%9)//3
         self.eps = eps if eps==1 else -1
         # 素数表
-        self.is_primes, self.smallest_primes, self.primes = eratosthenes_sieve(self.dB)
+        self.smallest_primes, self.primes = eratosthenes_sieve(self.sqrt_dB)
+        # self.is_primes, self.smallest_primes, self.primes = eratosthenes_sieve(self.dB)
         # P, M
         self.P = int(3*log(log(self.B))*log(log(log(self.B))))
         self.Mps = []
@@ -38,6 +42,9 @@ class Constants:
         # table of z^3=k(mod p^r)
         self.get_cube_table()
 
+    def extra_cube(self, p):
+        return cuberoots(self.k, p)
+
     def get_cube_table(self):
         '''cube_table[(r, p)] is solutions of z^3=k(mod p^r)'''
         self.cube_table = {}
@@ -49,11 +56,44 @@ class Constants:
                 zs = hensel(p, self.k, r, zs)
                 self.cube_table[(r,p)] = zs
                 pr, r = pr*p, r+1
+    
+    def run(self, d = None):
+        if d is not None:
+            d_pf_counter = prime_factorization(d, self.sqrt_dB, self.primes, self.smallest_primes)
+            zs_p = None
+            for p, v in d_pf_counter.items():
+                if p>self.sqrt_dB:
+                    zs_p = {p:cuberoots(self.k, p)}
+                    break
+            DSlice(self, d, d_pf_counter, zs_p).run()
+            return
+        for d in range(1, self.dB):
+            if d==1:
+                if DSlice(self, d, Counter()).run():
+                    return
+                continue
+            d_pf_counter = prime_factorization(d, self.sqrt_dB, self.primes, self.smallest_primes)
+            max_p = max([k for k, v in d_pf_counter.items() if v>0])
+            if max_p>self.sqrt_dB:
+                if sum([v for k, v in d_pf_counter.items()])==1:
+                    zs_p = {max_p:cuberoots(self.k, max_p)}
+                    for dn in range(0, self.dB//max_p+1):
+                        dn_pf_counter = prime_factorization(dn, self.sqrt_dB, self.primes, self.smallest_primes)
+                        real_d = dn * max_p
+                        dn_pf_counter[max_p] += 1
+                        if DSlice(self, real_d, dn_pf_counter, zs_p).run():
+                            return
+            else:            
+                if DSlice(self, d, d_pf_counter).run():
+                    return
+
 
 class DSlice:
-    def __init__(self, cons, d):
+    def __init__(self, cons, d, d_pf_counter, zs_p = None):
         self.d = d
         self.cons = cons
+        self.d_pf_counter = d_pf_counter
+        self.zs_p = zs_p
 
     def run(self):
         if self.d%3==0:
@@ -106,12 +146,19 @@ class DSlice:
         if self.d==1:
             self.z_mod_d = [0]
         else:
-            d_pf_counter = prime_factorization(self.d, self.cons.primes, self.cons.smallest_primes)
+            # d_pf_counter = prime_factorization(self.d, self.cons.primes, self.cons.smallest_primes)
+            d_pf_counter = self.d_pf_counter
             n = []
             a = []
             for prime, count in d_pf_counter.items():
                 n.append(prime**count)
-                a.append(self.cons.cube_table[count, prime])
+                if (count, prime) in self.cons.cube_table:
+                    a.append(self.cons.cube_table[count, prime])
+                elif prime in self.zs_p and count==1:
+                    a.append(self.zs_p[prime])
+                else:
+                    # print(d_pf_counter, prime, count)
+                    raise Exception("can't find cube root")
             self.z_mod_d, _ = multivalued_chinese_remainder(n, a, self.d)
 
             # self.z_mod_d, _ = multivalued_chinese_remainder(keys, 
@@ -129,6 +176,7 @@ class DSlice:
     def _is_square(self):
         for z_repr in self.z_mod_dM18:
             z0 = self.sgnz*self.z_limit + self.sgnz*((self.sgnz*z_repr-self.z_limit)%self.divisor)
+            
             # z0 = self.sgnz*self.z_limit +  self.sgnz*((z_repr-self.sgnz*self.z_limit)%self.divisor)
             for z in range(z0, self.sgnz*(self.cons.B+1), self.sgnz*self.divisor):
                 # 条件2、3的判定和平方根判定
@@ -138,7 +186,8 @@ class DSlice:
                 x,y,z = self.getXYZ(z)
                 if self.testXYZ(x,y,z):
                     print(x,y,z)
-                    return True                    
+                    return True     
+
 
     def _condition_23(self, z):
         t = get_log_2(z**3-self.cons.k)
@@ -152,7 +201,9 @@ class DSlice:
         '''获得方程的解
         由于3不能整除d,delta为平方数，由于delta能整除3,所以delta能整除9，
         意味着delta/3d能整除3，所以根号里面必然是整数解，因此不需要额外的判断'''
-        sq = round(((4*abs(self.cons.k-z**3)-self.d**3)//(3*self.d))**0.5)
+        # sq = round(()**0.5)
+        inside = (4*abs(self.cons.k-z**3)-self.d**3)//(3*self.d)
+        sq = is_square(inside)
         x, y = -self.sgnz*(self.d+sq)//2, -self.sgnz*(self.d-sq)//2
         if abs(x)<abs(y):
             x, y = y, x
@@ -180,11 +231,37 @@ def eratosthenes_sieve(n):
                     smallest_primes[j] = i
     # 获取素数表
     primes = [i for i, is_prime in enumerate(is_primes) if i>1 and is_prime is False]
-    return is_primes, smallest_primes, primes
+    return smallest_primes, primes
 
-def prime_factorization(n, primes, smallest_primes):
+def prime_factorization(n, Bound, primes, smallest_primes):
+    if n==1:
+        return Counter()
+    if n<=Bound:
+        return _prime_factorization(n, primes, smallest_primes)
+    prime_factor_counter = Counter()
+    for p in primes:
+        # print(p, prime_factor_counter)
+        if n == 1:
+            return prime_factor_counter
+        if p*p >n:
+            return prime_factor_counter+Counter({n:1})
+        while True:                
+            if n<=Bound:
+                prime_factor_counter += _prime_factorization(n, primes, smallest_primes)
+                return prime_factor_counter
+            if n%p != 0:
+                break
+            prime_factor_counter[p] += 1
+            n //= p
+    if n == 1:
+        return prime_factor_counter
+    else:
+        return prime_factor_counter+Counter({n:1})
+
+def _prime_factorization(n, primes, smallest_primes):
     '''获取数n的整数分解'''
-    assert n>1
+    if n==1:
+        return Counter()
     prime_factor_counter = Counter()
     quotient = n
     while quotient>1:
@@ -457,13 +534,17 @@ def _hensel(p, k, r, z_lower):
     return zs
 
 # ======== main和test ==================
-def main(B, k):
-    cons = Constants(B, k)
-    for d in range(1, cons.dB):
-        if DSlice(cons, d).run():
-            break
+def main(B, k, d = None):
+    Constants(B, k).run(d)
+
 
 if __name__ == "__main__":
-    main(B = int(2e5), k = 39)
+    # test()
+    x = 8866128975287528
+    y = -8778405442862239
+    z =  -2736111468807040
+    print(x**3+y**3+z**3)
+    # main(B = int(2e5), k = 39)
+    main(B = int(3e15), k = 33, d = x+y)
     # main(B = int(5e6), k = 75)
     # main(B = int(100), k = 78)
